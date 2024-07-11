@@ -15,18 +15,28 @@ const CartScreen = () => {
   const removeFromCart = async (product) => {
     const newCart = cart.filter((item) => item.id !== product.id);
     setCart(newCart);
-    await AsyncStorage.setItem('cart', JSON.stringify(newCart));
+    try {
+      await AsyncStorage.setItem('cart', JSON.stringify(newCart));
+    } catch (error) {
+      console.error('Error saving cart:', error);
+    }
   };
+  
 
   useEffect(() => {
     const loadCart = async () => {
-      const storedCart = await AsyncStorage.getItem('cart');
-      if (storedCart) {
-        setCart(JSON.parse(storedCart));
+      try {
+        const storedCart = await AsyncStorage.getItem('cart');
+        if (storedCart) {
+          setCart(JSON.parse(storedCart));
+        }
+      } catch (error) {
+        console.error('Error loading cart:', error);
       }
     };
     loadCart();
   }, []);
+  
 
   return (
     <View style={styles.container}>
@@ -49,9 +59,9 @@ const CartScreen = () => {
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <View style={styles.product}>
-              <Image source={item.image} style={styles.image} />
+              <Image source={{ uri: item.image }} style={styles.image} /> 
               <View style={styles.productDetails}>
-                <Text style={styles.productName}>{item.name}</Text>
+                <Text style={styles.productName}>{item.title}</Text>
                 <Text style={styles.productDescription}>{item.description}</Text>
                 <Text style={styles.price}>${item.price}</Text>
                 <TouchableOpacity onPress={() => removeFromCart(item)} style={styles.removeButton}>

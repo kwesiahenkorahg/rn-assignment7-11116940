@@ -2,42 +2,55 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const products = [
-  { id: '1', name: 'Office Wear', description: 'reversible angora cardigan', price: 120, image: require('../assets/dress1.png') },
-  { id: '2', name: 'Black', description: 'reversible angora cardigan', price: 120, image: require('../assets/dress2.png') },
-  { id: '3', name: 'Church Wear', description: 'reversible angora cardigan', price: 120, image: require('../assets/dress3.png') },
-  { id: '4', name: 'Lamerei', description: 'reversible angora cardigan', price: 120, image: require('../assets/dress4.png') },
-  { id: '5', name: '21WN', description: 'reversible angora cardigan', price: 120, image: require('../assets/dress5.png') },
-  { id: '6', name: 'Lopo', description: 'reversible angora cardigan', price: 120, image: require('../assets/dress6.png') },
-  { id: '7', name: '21WN', description: 'reversible angora cardigan', price: 120, image: require('../assets/dress7.png') },
-  { id: '8', name: 'Lamerei', description: 'reversible angora cardigan', price: 120, image: require('../assets/dress3.png') },
-];
-
 const HomeScreen = ({ navigation }) => {
+  const [products, setProducts] = useState([]);
   const [cart, setCart] = useState([]);
 
-  const addToCart = async (product) => {
-    const newCart = [...cart, product];
-    setCart(newCart);
-    await AsyncStorage.setItem('cart', JSON.stringify(newCart));
-  };
-
   useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch('https://fakestoreapi.com/products');
+        const data = await response.json();
+        setProducts(data);
+      } catch (error) {
+        console.error('Error fetching products:', error);
+      }
+    };
+
     const loadCart = async () => {
       const storedCart = await AsyncStorage.getItem('cart');
       if (storedCart) {
         setCart(JSON.parse(storedCart));
       }
     };
+
+    fetchProducts();
     loadCart();
   }, []);
+
+  const addToCart = async (product) => {
+    const newCart = [...cart, product];
+    setCart(newCart);
+    try {
+      await AsyncStorage.setItem('cart', JSON.stringify(newCart));
+    } catch (error) {
+      console.error('Error saving cart:', error);
+    }
+  };
+
+  const truncateText = (text, length) => {
+    if (text.length <= length) return text;
+    return text.substring(0, length) + '...';
+  };
+
+  const navigateToDetail = (product) => {
+    navigation.navigate('ProductDetail', { productId: product.id });
+  };
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity>
-          <Image source={require('../assets/Menu.png')} style={styles.headerIcon} />
-        </TouchableOpacity>
+        <TouchableOpacity />
         <Image source={require('../assets/Logo.png')} style={styles.logo} />
         <View style={styles.headerRight}>
           <TouchableOpacity>
@@ -49,7 +62,7 @@ const HomeScreen = ({ navigation }) => {
         </View>
       </View>
       <View style={styles.titleRow}>
-        <Text style={styles.title}>OUR STORY</Text>
+        <Text style={styles.title}>OUR STORE</Text>
         <View style={styles.buttonRow}>
           <TouchableOpacity style={styles.circularButton}>
             <Image source={require('../assets/Listview.png')} style={styles.buttonIcon} />
@@ -62,21 +75,21 @@ const HomeScreen = ({ navigation }) => {
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <FlatList
           data={products}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item.id.toString()}
           renderItem={({ item }) => (
-            <View style={styles.product}>
+            <TouchableOpacity style={styles.product} onPress={() => navigateToDetail(item)}>
               <View style={styles.imageContainer}>
-                <Image source={item.image} style={styles.image} />
+                <Image source={{ uri: item.image }} style={styles.image} />
                 <TouchableOpacity style={styles.addButton} onPress={() => addToCart(item)}>
                   <Image source={require('../assets/add_circle.png')} style={styles.addIcon} />
                 </TouchableOpacity>
               </View>
               <View style={styles.productDetails}>
-                <Text style={styles.productName}>{item.name}</Text>
-                <Text style={styles.productDescription}>{item.description}</Text>
+                <Text style={styles.productName}>{item.title.toUpperCase()}</Text>
+                <Text style={styles.productDescription}>{truncateText(item.description, 50)}</Text>
                 <Text style={styles.price}>${item.price}</Text>
               </View>
-            </View>
+            </TouchableOpacity>
           )}
           numColumns={2}
           columnWrapperStyle={styles.row}
@@ -96,7 +109,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 10,
+    padding: 5,
   },
   headerRight: {
     flexDirection: 'row',
@@ -120,7 +133,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 22,
-    fontWeight: 480,
+    fontWeight: 'bold',
     marginVertical: 10,
     letterSpacing: 3,
     fontFamily: 'TenorSans',
@@ -165,7 +178,6 @@ const styles = StyleSheet.create({
     height: 245,
     marginBottom: 10,
     resizeMode: 'cover',
-    alignItems: 'left'
   },
   addButton: {
     position: 'absolute',
@@ -180,13 +192,13 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   productName: {
-    fontWeight: 480,
+    fontWeight: 'bold',
     fontFamily: 'TenorSans',
   },
   productDescription: {
-    fontFamily: 'TenorSans', 
+    fontFamily: 'TenorSans',
     fontSize: 13,
-    color: '#555'
+    color: '#555',
   },
   price: {
     color: '#ed7014',
@@ -195,6 +207,5 @@ const styles = StyleSheet.create({
     fontFamily: 'TenorSans',
   },
 });
-
 
 export default HomeScreen;
